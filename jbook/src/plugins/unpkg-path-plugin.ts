@@ -1,5 +1,10 @@
 import axios from 'axios'
 import * as esbuild from 'esbuild-wasm'
+import localforage from 'localforage'
+
+const fileCache = localforage.createInstance({
+  name: 'filecache',
+})
 
 export const unpkgPathPlugin = () => {
   return {
@@ -10,16 +15,21 @@ export const unpkgPathPlugin = () => {
         if (args.path === 'index.js') {
           return { path: args.path, namespace: 'a' }
         }
+
+        if (args.path.includes('./') || args.path.includes('../')) {
+          return {
+            namespace: 'a',
+            path: new URL(
+              args.path,
+              'https://unpkg.com' + args.resolveDir + '/'
+            ).href,
+          }
+        }
+
         return {
           namespace: 'a',
           path: `https://unpkg.com/${args.path}`,
         }
-        // else if (args.path === 'tiny-test-pkg') {
-        //   return {
-        //     path: 'https://unpkg.com/tiny-test-pkg@1.0.0/index.js',
-        //     namespace: 'a',
-        //   }
-        // }
       })
 
       build.onLoad({ filter: /.*/ }, async (args: any) => {
@@ -29,16 +39,29 @@ export const unpkgPathPlugin = () => {
           return {
             loader: 'jsx',
             contents: `
-              const message = require('tiny-test-pkg');
-              console.log(message);
+              const message = require('react');
+              console.log(message); 
             `,
           }
         }
-        const { data } = await axios.get(args.path)
-        return {
-          loader: 'jsx',
-          content: data,
+
+        const cachedResult = await fileCache.getItem<esbuild.OnLoadResult>(
+          args.path
+        )
+
+        if (cachedResult) {
+          return cachedResult
         }
+
+        const { data, request } = await axios.get(args.path)
+        const result: esbuild.OnLoadResult = {
+          loader: 'jsx',
+          contents: data,
+          resolveDir: new URL('./', request.responseURL).pathname,
+        }
+
+        await fileCache.setItem(args.path, result)
+        return result
       })
     },
   }
