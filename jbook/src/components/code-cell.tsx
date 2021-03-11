@@ -22,9 +22,7 @@ const CodeCell = () => {
             initialValue="const a = 1"
           />
         </Resizable>
-        {/* <div>
-          <button onClick={onClick}>Submit</button>
-        </div> */}
+
         <Preview code={code} />
       </div>
     </Resizable>
