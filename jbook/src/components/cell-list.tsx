@@ -13,6 +13,7 @@ const CellList: React.FC = () => {
       <AddCell prevCellId={cell.id} />
     </Fragment>
   ))
+
   return (
     <div>
       <AddCell forceVisible={cells.length === 0} prevCellId={null} />
