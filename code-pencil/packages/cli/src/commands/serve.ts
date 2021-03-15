@@ -1,5 +1,5 @@
+import { serve } from '@code-pencil/local-api'
 import { Command } from 'commander'
-import { serve } from 'local-api'
 import path from 'path'
 
 const isProduction = process.env.NODE_ENV === 'production'
